@@ -4,23 +4,24 @@ Description: "Configures Athena and s3 for querying cloudfront logs"
 Parameters:
   Environment:
     Type: String
-    Default: "staging"
+    Default: "development"
     AllowedValues:
       - staging
       - production
-    Description: "The deployment environment. Valid values are staging or production."
+      - development
+    Description: "The deployment environment. Valid values are development,staging or production."
   
 Resources:
   
   LogBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${Environment}--logs"
+      BucketName: !Sub "${Environment}-logs-<hash>" # add a hash with the name to generate a unique bucket name
       LifecycleConfiguration:
         Rules:
           - Id: "DeleteLogsAfter6Months"
             Status: "Enabled"
-            ExpirationInDays: 180
+            ExpirationInDays: 60 # Set this according to your requirement
       VersioningConfiguration:
         Status: "Enabled"
       PublicAccessBlockConfiguration:
@@ -34,7 +35,7 @@ Resources:
     Properties:
       CatalogId: !Ref "AWS::AccountId"
       DatabaseInput: 
-         Name: !Sub '${Environment}--logs'
+         Name: !Sub '${Environment}-logs'
   
   AthenaGlueTable:
     Type: AWS::Glue::Table
@@ -45,12 +46,8 @@ Resources:
         Name: 'access_logs'
         TableType: EXTERNAL_TABLE
         StorageDescriptor:
-          Location: 
-            Fn::Join:
-              - ""
-              - - "s3://"
-                - !Ref LogBucket
-                - "/"
+          Location: !Sub "s3://${LogBucket}/"
+
           Columns:
             - Name: 'timestamp'
               Type: 'string'
@@ -128,38 +125,36 @@ Resources:
           OutputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
           SerdeInfo:
             SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe
-          Parameters:
-            projection.enabled: "true"
-            projection.year.type: "integer"
-            projection.year.range: "2020,2030"
-            projection.month.type: "integer"
-            projection.month.range: "1,12"
-            projection.day.type: "integer"
-            projection.day.range: "1,31"
-            projection.hour.type: "integer"
-            projection.hour.range: "0,23"
-            storage.location.template: 
-              Fn::Join:
-                - ""
-                - - "s3://"
-                  - !Ref LogBucket
-                  - "/year=${year}/month=${month}/day=${day}/hour=${hour}/"
+            Parameters:
+              serialization.format: 1
       
         PartitionKeys:
           - Name: year
-            Type: string
+            Type: integer
           - Name: month
-            Type: string
+            Type: integer
           - Name: day
-            Type: string
+            Type: integer
           - Name: hour
-            Type: string
+            Type: integer
         Parameters:
           EXTERNAL: "TRUE"
-          classification: "parquet"
+          projection.enabled: "true"
+          projection.year.type: "integer"
+          projection.year.range: "2020,2030"
+          projection.month.type: "integer"
+          projection.month.range: "1,12"
+          projection.day.type: "integer"
+          projection.day.range: "1,31"
+          projection.hour.type: "integer"
+          projection.hour.range: "0,23"
+          storage.location.template: 
+            Fn::Join:
+              - ""
+              - - "s3://"
+                - !Ref LogBucket
+                - "/year=${year}/month=${month}/day=${day}/hour=${hour}/"
 Outputs:
-  S3Bucket:
-      Description: "LogBucket"
+  LogBucket:
+      Description: "CloudfrontLogBucket"
       Value: !Ref LogBucket
-      Export:
-        Name: !Join [ "--", [ !Ref Environment, "LogBucket" ] ]

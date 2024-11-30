@@ -1,13 +1,13 @@
 # Athena and S3 Setup for Querying CloudFront Logs
 
-This CloudFormation template configures an AWS S3 bucket and Athena Glue database and table to enable querying of CloudFront access logs. It is designed to work in both **staging** and **production** environments and provides lifecycle rules, public access restrictions, and a schema optimized for Parquet files.
+All this IAC setup configures an AWS S3 bucket and Athena Glue database and table to enable querying of CloudFront access logs. It is designed to work in **development**, **staging** and **production** environments and provides lifecycle rules, public access restrictions, and a schema optimized for Parquet files.
 
 ---
 
 ## Features
 
 - **S3 Bucket Configuration**:
-  - Environment-specific bucket naming (e.g., `staging--logs`, `production--logs`).
+  - Environment-specific bucket naming
   - Lifecycle rule to delete logs after 6 months (180 days).
   - Bucket versioning enabled for data durability.
   - Public access blocked for enhanced security.
@@ -28,23 +28,13 @@ This CloudFormation template configures an AWS S3 bucket and Athena Glue databas
    - An AWS account with permissions to create S3 buckets, Glue databases, and tables.
    - CloudFront access logs enabled and directed to an S3 bucket.
 
-2. **Deploy the Stack**:
-   - Save the template as `cloudfront-logs-athena.yaml`.
-   - Use AWS CLI or the AWS Management Console to deploy:
-     ```bash
-     aws cloudformation deploy \
-       --template-file cloudfront-logs-athena.yaml \
-       --stack-name CloudFrontLogsStack \
-       --parameter-overrides Environment=staging
-     ```
-
-3. **Verify Resources**:
+2. **Verify Resources**:
    - Check the created S3 bucket in your AWS Management Console under S3.
    - View the Glue Database and Table under AWS Glue in your AWS Console.
 
-4. **Query CloudFront Logs**:
+3. **Query CloudFront Logs**:
    - Open the Athena console.
-   - Select the Glue database (e.g., `staging--logs`).
+   - Select the Glue database (e.g., `development-logs`).
    - Run SQL queries on the `access_logs` table using the provided schema.
 
 ---
@@ -53,16 +43,8 @@ This CloudFormation template configures an AWS S3 bucket and Athena Glue databas
 
 - **Environment**:
   - Specifies the deployment environment.
-  - Default: `staging`
-  - Allowed Values: `staging`, `production`
-
----
-
-## Outputs
-
-- **LogBucket**:
-  - The name of the S3 bucket created for storing CloudFront logs.
-  - Accessible through the CloudFormation stack output.
+  - Default: `development`
+  - Allowed Values: `development`, `staging`, `production`
 
 ---
 

@@ -1,0 +1,3 @@
+aws-cdk.core==2.96.1
+aws-cdk.aws-s3==2.96.1
+aws-cdk.aws-glue==2.96.1
